@@ -10,12 +10,12 @@ The platform is split into two parts:
 
 ## Features
 
-- 🛒 **E-Commerce Shop**: Browse featured products, filter by categories, and sort by price or popularity.
-- 🔐 **User Authentication**: Secure login and registration using Laravel Sanctum (cookie-based stateful authentication).
-- 🛍️ **Shopping Cart**: Real-time cart synchronization between local state and the database.
-- 💳 **Checkout System**: Integrated checkout process with support for Mobile Money (MOMO) and Flutterwave.
-- 📱 **Responsive Design**: fully optimized for mobile and desktop screens with a beautiful Dark/Light mode toggle.
-- 📚 **API Documentation**: Auto-generated OpenAPI/Swagger documentation for the backend (powered by Scramble).
+- **E-Commerce Shop**: Browse featured products, filter by categories, and sort by price or popularity.
+- **User Authentication**: Secure login and registration using Laravel Sanctum (cookie-based stateful authentication).
+- **Shopping Cart**: Real-time cart synchronization between local state and the database.
+- **Checkout System**: Integrated checkout process with support for Mobile Money (MOMO) and Flutterwave.
+- **Responsive Design**: fully optimized for mobile and desktop screens with a beautiful Dark/Light mode toggle.
+- **API Documentation**: Auto-generated OpenAPI/Swagger documentation for the backend (powered by Scramble).
 
 ---
 
