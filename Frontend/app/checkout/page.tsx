@@ -6,6 +6,7 @@ import Footer from "../components/Footer";
 import { useCart } from "../components/CartContext";
 import { useDark } from "../components/DarkContext";
 import Button from "../components/Button";
+import { api } from "../lib/api";
 
 const SHIPPING = 5000;
 
@@ -25,6 +26,8 @@ export default function CheckoutPage() {
   const [payMethod, setPayMethod] = useState<"momo" | "flutterwave">("momo");
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [placed, setPlaced] = useState(false);
+  const [orderRef, setOrderRef] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const bg = dark ? "#0d1f10" : "#f9fafb";
   const cardBg = dark ? "#1a2e1e" : "white";
@@ -49,11 +52,47 @@ export default function CheckoutPage() {
     if (errors[field]) setErrors(p => { const n = { ...p }; delete n[field]; return n; });
   }
 
-  function handlePlaceOrder() {
+  async function handlePlaceOrder() {
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    clearCart();
-    setPlaced(true);
+
+    setLoading(true);
+    try {
+      // Build order payload matching typical backend expectation
+      const payload = {
+        billing_address: {
+           first_name: form.firstName,
+           last_name: form.lastName,
+           company: form.company,
+           country: "Rwanda",
+           street_address: form.street,
+           apartment: form.street2,
+           city: form.city,
+           postcode: form.postcode,
+           phone: form.phone,
+           email: form.email,
+        },
+        shipping_different: form.shipDiff,
+        notes: form.notes,
+        payment_method: payMethod,
+        items: items.map(i => ({
+           product_id: i.product_id, // May be undefined for fallback items, backend should handle or we fail gracefully
+           title: i.title,
+           quantity: i.qty,
+           unit_price: i.price
+        })),
+        total_amount: total
+      };
+
+      const res = await api.post<any>("/checkout", payload);
+      setOrderRef(res.reference || "ORD-" + Math.floor(Math.random() * 1000000));
+      clearCart();
+      setPlaced(true);
+    } catch (err: any) {
+      alert("Failed to place order: " + (err.message || "Unknown error"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   const inp = (field?: string) => ({
@@ -75,6 +114,7 @@ export default function CheckoutPage() {
           <h1 className="text-2xl font-bold mb-3" style={{ color: textPrimary }}>Order Placed!</h1>
           <p className="text-sm mb-8 leading-relaxed" style={{ color: textMuted }}>
             Thank you, <strong style={{ color: textPrimary }}>{form.firstName}</strong>! Your order has been received.
+            Your order reference is <strong style={{ color: textPrimary }}>{orderRef}</strong>.<br/>
             We&apos;ll contact you at <strong style={{ color: textPrimary }}>{form.email}</strong> with confirmation details.
           </p>
           <Button onClick={() => router.push("/products")}>Continue Shopping</Button>
@@ -280,7 +320,9 @@ export default function CheckoutPage() {
               <a href="#" className="underline" style={{ color: "#0d9e72" }}>privacy policy</a>.
             </p>
 
-            <Button onClick={handlePlaceOrder} fullWidth className="mt-5">Place order</Button>
+            <Button onClick={handlePlaceOrder} fullWidth className="mt-5" disabled={loading}>
+              {loading ? "Placing order..." : "Place order"}
+            </Button>
           </div>
 
         </div>

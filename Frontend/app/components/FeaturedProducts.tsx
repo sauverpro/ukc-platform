@@ -1,15 +1,26 @@
 "use client";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDark } from "./DarkContext";
 import { useCart } from "./CartContext";
 import { useAnimateOnScroll } from "../hooks/useAnimateOnScroll";
 import Button from "./Button";
+import { api, Product, PaginatedResponse } from "../lib/api";
 
-const PRODUCTS = [
-  { title: "Feed Pellets", img: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80", price: 400, rating: 0 },
-  { title: "Fodder Silage", img: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80", price: 120, rating: 4 },
-  { title: "Hydroponic Green Fodder", img: "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=600&q=80", price: 250, rating: 0 },
+// Fallback data for when the API is unreachable or products table is empty
+const FALLBACK_PRODUCTS = [
+  { title: "Feed Pellets", img: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?w=600&q=80", price: 400, rating: 0, slug: "feed-pellets" },
+  { title: "Fodder Silage", img: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=600&q=80", price: 120, rating: 4, slug: "fodder-silage" },
+  { title: "Hydroponic Green Fodder", img: "https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?w=600&q=80", price: 250, rating: 0, slug: "hydroponic-green-fodder" },
 ];
+
+type DisplayProduct = {
+  title: string;
+  img: string;
+  price: number;
+  rating: number;
+  slug: string;
+};
 
 function Stars({ count }: { count: number }) {
   if (!count) return null;
@@ -24,7 +35,7 @@ function Stars({ count }: { count: number }) {
   );
 }
 
-function ProductCard({ title, img, price, rating, index }: { title: string; img: string; price: number; rating: number; index: number }) {
+function ProductCard({ title, img, price, rating, slug, index }: DisplayProduct & { index: number }) {
   const { dark } = useDark();
   const { addItem } = useCart();
   const router = useRouter();
@@ -38,7 +49,7 @@ function ProductCard({ title, img, price, rating, index }: { title: string; img:
       </div>
       <div className="pt-5 pb-6 px-2 flex flex-col gap-2" style={{ background: dark ? "#1a2e1e" : "white" }}>
         <h3 className="text-center font-bold text-lg tracking-wide" style={{ color: dark ? "#f0fdf4" : "#1f2937" }}>{title}</h3>
-        <p className="text-center text-sm" style={{ color: "#1a5c2a" }}>Fr {price}</p>
+        <p className="text-center text-sm" style={{ color: "#1a5c2a" }}>Fr {price.toLocaleString()}</p>
         <Stars count={rating} />
         <p className="text-center text-xs font-semibold tracking-widest" style={{ color: "#9ca3af" }}>UNCATEGORIZED</p>
         <div className="mt-3">
@@ -54,6 +65,25 @@ function ProductCard({ title, img, price, rating, index }: { title: string; img:
 export default function FeaturedProducts() {
   const { dark } = useDark();
   const headingRef = useAnimateOnScroll("animate__fadeInDown", 0);
+  const [products, setProducts] = useState<DisplayProduct[]>(FALLBACK_PRODUCTS);
+
+  useEffect(() => {
+    api.get<PaginatedResponse<Product>>("/products?per_page=3")
+      .then(res => {
+        if (res.data.length > 0) {
+          setProducts(res.data.map(p => ({
+            title: p.name,
+            img: p.featured_image || FALLBACK_PRODUCTS[0].img,
+            price: p.base_price,
+            rating: Math.round(p.average_rating),
+            slug: p.slug,
+          })));
+        }
+      })
+      .catch(() => {
+        // Keep fallback products on error
+      });
+  }, []);
 
   return (
     <section className="py-24 px-8 md:px-16" style={{ background: dark ? "#0d1f10" : "white" }}>
@@ -65,7 +95,7 @@ export default function FeaturedProducts() {
           </h2>
         </div>
         <div className="grid md:grid-cols-3 gap-10">
-          {PRODUCTS.map((p, i) => <ProductCard key={p.title} {...p} index={i} />)}
+          {products.map((p, i) => <ProductCard key={p.slug} {...p} index={i} />)}
         </div>
       </div>
     </section>

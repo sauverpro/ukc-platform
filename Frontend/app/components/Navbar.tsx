@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useState, useRef, useEffect } from "react";
 import { useCart } from "./CartContext";
 import { useDark } from "./DarkContext";
+import { useAuth } from "../lib/auth";
+import type { ApiError } from "../lib/api";
 import Button from "./Button";
 
 const NAV_LINKS = ["HOME", "OUR SHOP", "SERVICES", "CONTACT"];
@@ -34,6 +36,29 @@ export default function Navbar({ active = "HOME", transparent = false }: { activ
 
   const { items, removeItem, count } = useCart();
   const { dark, toggle } = useDark();
+  const { user, isAuthenticated, login, logout } = useAuth();
+
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoginError("");
+    setLoginLoading(true);
+    try {
+      await login(loginEmail, loginPassword);
+      setLoginOpen(false);
+      setLoginEmail("");
+      setLoginPassword("");
+    } catch (err) {
+      const apiErr = err as ApiError;
+      setLoginError(apiErr.message || "Login failed.");
+    } finally {
+      setLoginLoading(false);
+    }
+  }
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
   const cartRef = useRef<HTMLDivElement>(null);
@@ -128,12 +153,25 @@ export default function Navbar({ active = "HOME", transparent = false }: { activ
                 )}
               </div>
 
-              {/* Login */}
-              <button className="nav-icon-btn" title="Login" onClick={() => setLoginOpen(true)}>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" />
-                </svg>
-              </button>
+              {/* Login / User */}
+              {isAuthenticated ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold" style={{ color: "#0d9e72" }}>
+                    {user?.name?.split(" ")[0]}
+                  </span>
+                  <button className="nav-icon-btn" title="Logout" onClick={() => logout()}>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                  </button>
+                </div>
+              ) : (
+                <button className="nav-icon-btn" title="Login" onClick={() => setLoginOpen(true)}>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </button>
+              )}
 
               {/* Cart */}
               <div className="relative" ref={cartRef}>
@@ -240,11 +278,20 @@ export default function Navbar({ active = "HOME", transparent = false }: { activ
               </Link>
             ))}
             <div className="flex items-center gap-5 pt-2 mobile-menu__border">
-              <button className="nav-icon-btn" onClick={() => setLoginOpen(true)}>
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9" />
-                </svg>
-              </button>
+              {isAuthenticated ? (
+                <button className="nav-icon-btn flex items-center gap-2" onClick={() => logout()}>
+                  <span className="text-xs font-semibold" style={{ color: "#0d9e72" }}>{user?.name?.split(" ")[0]}</span>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </button>
+              ) : (
+                <button className="nav-icon-btn" onClick={() => setLoginOpen(true)}>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </button>
+              )}
               <Link href="/cart" className="nav-icon-btn relative">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
@@ -282,14 +329,21 @@ export default function Navbar({ active = "HOME", transparent = false }: { activ
               onClick={() => setLoginOpen(false)}>×</button>
             <h2 className="login-modal__title">Login</h2>
             <p className="login-modal__subtitle">Sign in to your account</p>
-            <div className="space-y-4">
+            {loginError && (
+              <div className="mb-3 px-3 py-2 rounded text-xs" style={{ background: dark ? "#3b1010" : "#fef2f2", color: "#ef4444", border: "1px solid #ef4444" }}>
+                {loginError}
+              </div>
+            )}
+            <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="login-modal__label">Username or Email</label>
-                <input type="text" placeholder="Enter your email" className="login-modal__input" />
+                <label className="login-modal__label">Email</label>
+                <input type="email" required placeholder="Enter your email" className="login-modal__input"
+                  value={loginEmail} onChange={e => setLoginEmail(e.target.value)} />
               </div>
               <div>
                 <label className="login-modal__label">Password</label>
-                <input type="password" placeholder="Enter your password" className="login-modal__input" />
+                <input type="password" required placeholder="Enter your password" className="login-modal__input"
+                  value={loginPassword} onChange={e => setLoginPassword(e.target.value)} />
               </div>
               <div className="flex items-center justify-between text-xs" style={{ color: dark ? "#9ca3af" : "#6b7280" }}>
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -297,11 +351,14 @@ export default function Navbar({ active = "HOME", transparent = false }: { activ
                 </label>
                 <a href="#" className="hover:text-[#0d9e72] transition">Lost your password?</a>
               </div>
-              <Button type="submit" fullWidth>LOG IN</Button>
-            </div>
+              <Button type="submit" fullWidth disabled={loginLoading}>
+                {loginLoading ? "Signing in..." : "LOG IN"}
+              </Button>
+            </form>
             <p className="login-modal__footer">
               Don&apos;t have an account?{" "}
-              <a href="#" className="font-semibold hover:text-[#0d9e72] transition" style={{ color: "#0d9e72" }}>Register</a>
+              <Link href="/auth/register" className="font-semibold hover:text-[#0d9e72] transition" style={{ color: "#0d9e72" }}
+                onClick={() => setLoginOpen(false)}>Register</Link>
             </p>
           </div>
         </div>
