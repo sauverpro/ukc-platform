@@ -103,9 +103,9 @@ export default function ProductsPage() {
           );
         } else if (sort === "default") {
           // If no products in DB at all, use fallback
-           setProducts(FALLBACK_PRODUCTS);
+          setProducts(FALLBACK_PRODUCTS);
         } else {
-           setProducts([]); // DB exists but empty for this sort/filter
+          setProducts([]); // DB exists but empty for this sort/filter
         }
       })
       .catch(() => {
@@ -152,7 +152,6 @@ export default function ProductsPage() {
             <select value={sort} onChange={(e) => setSort(e.target.value)}
               className="text-sm border px-3 py-2 rounded outline-none"
               style={{ borderColor: "#e5e7eb", color: "#6b7280" }}>
-              <option value="default">Default sorting</option>
               <option value="popularity">Sort by popularity</option>
               <option value="rating">Sort by average rating</option>
               <option value="latest">Sort by latest</option>
@@ -162,7 +161,7 @@ export default function ProductsPage() {
           </div>
 
           {loading ? (
-             <div className="text-center py-10">Loading products...</div>
+            <div className="text-center py-10">Loading products...</div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
               {displayProducts.map((p, i) => <ProductCard key={p.slug} {...p} index={i} />)}
