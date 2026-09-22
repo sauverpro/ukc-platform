@@ -4,7 +4,7 @@ UKC Platform is a full-stack e-commerce solution built for **URUHIMBIKAGEYO LTD*
 
 The platform is split into two parts:
 1. **Frontend**: A modern, responsive web application built with **Next.js**, **React**, and **Tailwind CSS**.
-2. **Backend**: A robust REST API built with **Laravel**, utilizing **MySQL** for data storage and **Sanctum** for authentication.
+2. **Backend**: A robust REST API built with **Laravel**, utilizing **MySQL** for data storage and **Sanctum**  authentication.
 
 ---
 
